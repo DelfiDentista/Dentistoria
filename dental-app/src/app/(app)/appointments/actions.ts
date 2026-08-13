@@ -16,6 +16,7 @@ export async function createAppointment(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/appointments");
+  revalidatePath("/calendar");
 }
 
 export async function setAppointmentStatus(id: string, status: string) {
