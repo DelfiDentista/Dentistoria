@@ -1,0 +1,132 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import type { MedicalHistoryData, Odontogram } from "@/lib/types";
+
+function str(v: FormDataEntryValue | null): string | null {
+  const s = String(v ?? "").trim();
+  return s === "" ? null : s;
+}
+
+export async function createPatient(formData: FormData) {
+  const supabase = await createClient();
+  const payload = {
+    first_name: str(formData.get("first_name")) ?? "",
+    last_name: str(formData.get("last_name")) ?? "",
+    dni: str(formData.get("dni")),
+    birth_date: str(formData.get("birth_date")),
+    sex: str(formData.get("sex")),
+    phone: str(formData.get("phone")),
+    email: str(formData.get("email")),
+    address: str(formData.get("address")),
+    insurance_name: str(formData.get("insurance_name")),
+    insurance_plan: str(formData.get("insurance_plan")),
+    insurance_number: str(formData.get("insurance_number")),
+    notes: str(formData.get("notes")),
+  };
+
+  const { data, error } = await supabase
+    .from("patients")
+    .insert(payload)
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  const patientId = data.id as string;
+
+  // Datos opcionales provenientes de la transcripción por IA
+  const mhRaw = str(formData.get("mh"));
+  if (mhRaw) {
+    try {
+      const mh = JSON.parse(mhRaw);
+      await supabase
+        .from("medical_histories")
+        .upsert({ patient_id: patientId, data: mh });
+    } catch {
+      /* ignora JSON inválido */
+    }
+  }
+
+  const evoRaw = str(formData.get("evo"));
+  if (evoRaw) {
+    try {
+      const evo = JSON.parse(evoRaw) as { note_date: string | null; body: string }[];
+      const rows = evo
+        .filter((e) => e.body && e.body.trim())
+        .map((e) => ({
+          patient_id: patientId,
+          note_date: e.note_date ?? new Date().toISOString(),
+          body: e.body,
+        }));
+      if (rows.length) await supabase.from("evolution_notes").insert(rows);
+    } catch {
+      /* ignora JSON inválido */
+    }
+  }
+
+  revalidatePath("/patients");
+  redirect(`/patients/${patientId}`);
+}
+
+export async function updatePatient(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const payload = {
+    first_name: str(formData.get("first_name")) ?? "",
+    last_name: str(formData.get("last_name")) ?? "",
+    dni: str(formData.get("dni")),
+    birth_date: str(formData.get("birth_date")),
+    sex: str(formData.get("sex")),
+    phone: str(formData.get("phone")),
+    email: str(formData.get("email")),
+    address: str(formData.get("address")),
+    insurance_name: str(formData.get("insurance_name")),
+    insurance_plan: str(formData.get("insurance_plan")),
+    insurance_number: str(formData.get("insurance_number")),
+    notes: str(formData.get("notes")),
+  };
+  const { error } = await supabase.from("patients").update(payload).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/patients/${id}`);
+}
+
+export async function saveMedicalHistory(patientId: string, data: MedicalHistoryData) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("medical_histories")
+    .upsert({ patient_id: patientId, data, updated_at: new Date().toISOString() });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/patients/${patientId}`);
+}
+
+export async function addEvolutionNote(
+  patientId: string,
+  noteDate: string,
+  body: string
+) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("evolution_notes").insert({
+    patient_id: patientId,
+    note_date: noteDate,
+    body,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/patients/${patientId}`);
+}
+
+export async function deleteEvolutionNote(id: string, patientId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("evolution_notes").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/patients/${patientId}`);
+}
+
+export async function saveOdontogram(patientId: string, teeth: Odontogram) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("odontograms")
+    .upsert({ patient_id: patientId, teeth, updated_at: new Date().toISOString() });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/patients/${patientId}`);
+}
