@@ -1,3 +1,5 @@
+import { AR_TZ } from "./dates";
+
 export function fullName(p: { first_name: string; last_name: string }) {
   return `${p.last_name}, ${p.first_name}`;
 }
@@ -18,6 +20,7 @@ export function formatDate(iso: string | null): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("es-AR", {
+    timeZone: AR_TZ,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -29,11 +32,13 @@ export function formatDateTime(iso: string | null): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleString("es-AR", {
+    timeZone: AR_TZ,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   });
 }
 

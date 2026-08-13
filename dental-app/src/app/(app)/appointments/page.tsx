@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fullName, formatDateTime } from "@/lib/format";
 import AppointmentForm from "@/components/AppointmentForm";
+import EditAppointmentButton from "@/components/EditAppointmentButton";
 import { setAppointmentStatus, deleteAppointment } from "./actions";
 import type { Appointment, Patient } from "@/lib/types";
 
@@ -71,6 +72,7 @@ export default async function AppointmentsPage() {
             >
               {a.status}
             </span>
+            <EditAppointmentButton appointment={a} patients={opts} />
             <form action={setAppointmentStatus.bind(null, a.id, "atendido")}>
               <button className="btn-ghost text-xs">Atendido</button>
             </form>

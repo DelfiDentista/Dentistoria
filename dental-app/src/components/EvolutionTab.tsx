@@ -27,7 +27,7 @@ export default function EvolutionTab({
   async function add() {
     if (!body.trim()) return;
     setSaving(true);
-    await addEvolutionNote(patientId, new Date(date).toISOString(), body.trim());
+    await addEvolutionNote(patientId, date, body.trim());
     setSaving(false);
     setBody("");
     setDate(nowLocalInput());

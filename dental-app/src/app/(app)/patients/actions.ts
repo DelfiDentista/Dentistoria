@@ -3,7 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { arInputToISO } from "@/lib/dates";
 import type { MedicalHistoryData, Odontogram } from "@/lib/types";
+
+// Convierte una fecha (posible "YYYY-MM-DD" o "YYYY-MM-DDTHH:MM") a ISO en hora Argentina.
+function toISO(value: string | null | undefined): string {
+  if (!value) return new Date().toISOString();
+  const v = value.length === 10 ? `${value}T12:00` : value;
+  return arInputToISO(v);
+}
 
 function str(v: FormDataEntryValue | null): string | null {
   const s = String(v ?? "").trim();
@@ -57,7 +65,7 @@ export async function createPatient(formData: FormData) {
         .filter((e) => e.body && e.body.trim())
         .map((e) => ({
           patient_id: patientId,
-          note_date: e.note_date ?? new Date().toISOString(),
+          note_date: toISO(e.note_date),
           body: e.body,
         }));
       if (rows.length) await supabase.from("evolution_notes").insert(rows);
@@ -102,13 +110,13 @@ export async function saveMedicalHistory(patientId: string, data: MedicalHistory
 
 export async function addEvolutionNote(
   patientId: string,
-  noteDate: string,
+  noteLocal: string,
   body: string
 ) {
   const supabase = await createClient();
   const { error } = await supabase.from("evolution_notes").insert({
     patient_id: patientId,
-    note_date: noteDate,
+    note_date: toISO(noteLocal),
     body,
   });
   if (error) throw new Error(error.message);

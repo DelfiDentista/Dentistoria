@@ -48,6 +48,9 @@ function toLocalInput(d: Date) {
     d.getHours()
   )}:${pad(d.getMinutes())}`;
 }
+function hhmm(d: Date) {
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function WeekCalendar({
   appointments,
@@ -144,11 +147,11 @@ export default function WeekCalendar({
         <span className="ml-1 text-sm font-medium text-slate-600">{rangeLabel}</span>
       </div>
 
-      {/* Grilla del calendario */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      {/* Grilla del calendario (scroll interno, encabezado fijo) */}
+      <div className="max-h-[72vh] overflow-auto rounded-xl border border-slate-200 bg-white">
         <div className="min-w-[720px]">
-          {/* Encabezado de días */}
-          <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-slate-200">
+          {/* Encabezado de días (sticky) */}
+          <div className="sticky top-0 z-20 grid grid-cols-[56px_repeat(7,1fr)] border-b border-slate-200 bg-white">
             <div />
             {days.map((d, i) => {
               const isToday = sameDay(d, today);
@@ -174,16 +177,12 @@ export default function WeekCalendar({
 
           {/* Cuerpo con horas y columnas por día */}
           <div className="grid grid-cols-[56px_repeat(7,1fr)]">
-            {/* Columna de horas */}
-            <div>
+            {/* Columna de horas (sin líneas que crucen los números) */}
+            <div className="relative">
               {Array.from({ length: SLOTS }, (_, s) => (
-                <div
-                  key={s}
-                  style={{ height: SLOT_PX }}
-                  className="relative border-t border-slate-100"
-                >
+                <div key={s} style={{ height: SLOT_PX }} className="relative">
                   {s % 2 === 0 && (
-                    <span className="absolute -top-2 right-1 text-[10px] text-slate-400">
+                    <span className="absolute right-1 top-0.5 text-[10px] font-medium text-slate-400">
                       {pad(START_HOUR + s / 2)}:00
                     </span>
                   )}
@@ -203,26 +202,21 @@ export default function WeekCalendar({
                     key={s}
                     style={{ height: SLOT_PX }}
                     className={`border-t ${
-                      s % 2 === 0 ? "border-slate-100" : "border-slate-50"
+                      s % 2 === 0 ? "border-slate-200" : "border-slate-100"
                     }`}
                   />
                 ))}
                 {eventsForDay(day).map(({ a, top, height }) => (
                   <Link
                     key={a.id}
-                    href={a.patient_id ? `/patients/${a.patient_id}` : "/calendar"}
+                    href={a.patient_id ? `/patients/${a.patient_id}` : "/appointments"}
                     onClick={(e) => e.stopPropagation()}
                     style={{ top, height: Math.max(height - 2, 20) }}
                     className={`absolute left-0.5 right-0.5 overflow-hidden rounded-md border px-1.5 py-0.5 text-[11px] leading-tight ${
                       STATUS_COLORS[a.status] ?? "bg-slate-200"
                     }`}
                   >
-                    <div className="font-semibold">
-                      {a.start.toLocaleTimeString("es-AR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
+                    <div className="font-semibold">{hhmm(a.start)}</div>
                     <div className="truncate">
                       {a.patient_id
                         ? patientNames[a.patient_id] ?? "Paciente"
@@ -244,7 +238,7 @@ export default function WeekCalendar({
       {/* Modal de nuevo turno */}
       {modal.open && (
         <div
-          className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4"
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 p-4"
           onClick={() => setModal({ open: false, dt: "" })}
         >
           <form

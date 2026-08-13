@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { arInputToISO } from "@/lib/dates";
 
 export async function createPayment(formData: FormData) {
   const supabase = await createClient();
@@ -14,7 +15,7 @@ export async function createPayment(formData: FormData) {
     amount,
     method: String(formData.get("method") || "efectivo"),
     concept: (String(formData.get("concept") || "").trim() || null) as string | null,
-    paid_at: paidAt ? new Date(paidAt).toISOString() : new Date().toISOString(),
+    paid_at: paidAt ? arInputToISO(paidAt) : new Date().toISOString(),
   });
   if (error) throw new Error(error.message);
   revalidatePath("/cash");
