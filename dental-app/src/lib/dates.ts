@@ -11,6 +11,13 @@ export function arInputToISO(local: string): string {
   return new Date(`${withSeconds}${AR_OFFSET}`).toISOString();
 }
 
+// Fecha flexible ("YYYY-MM-DD" o "YYYY-MM-DDTHH:MM") -> ISO en hora Argentina.
+export function flexibleToISO(value: string | null | undefined): string {
+  if (!value) return new Date().toISOString();
+  const v = value.length === 10 ? `${value}T12:00` : value;
+  return arInputToISO(v);
+}
+
 // ISO/UTC -> valor para <input type="datetime-local"> mostrado en hora Argentina.
 export function isoToArInput(iso: string): string {
   const d = new Date(iso);

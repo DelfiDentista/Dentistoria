@@ -57,20 +57,37 @@ export async function POST(req: Request) {
   const form = await req.formData();
   const file = form.get("file");
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: "No se recibió imagen." }, { status: 400 });
+    return NextResponse.json({ error: "No se recibió archivo." }, { status: 400 });
   }
 
-  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  const mediaType = allowed.includes(file.type) ? file.type : "image/jpeg";
+  const isPdf =
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  const allowedImg = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const mediaType = allowedImg.includes(file.type) ? file.type : "image/jpeg";
 
   const bytes = Buffer.from(await file.arrayBuffer());
-  if (bytes.byteLength > 8 * 1024 * 1024) {
+  if (bytes.byteLength > 20 * 1024 * 1024) {
     return NextResponse.json(
-      { error: "La imagen supera los 8 MB. Reducila e intentá de nuevo." },
+      { error: "El archivo supera los 20 MB. Reducilo e intentá de nuevo." },
       { status: 400 }
     );
   }
   const base64 = bytes.toString("base64");
+
+  const block = isPdf
+    ? {
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data: base64 },
+      }
+    : {
+        type: "image",
+        source: { type: "base64", media_type: mediaType, data: base64 },
+      };
+
+  const content = [
+    block,
+    { type: "text", text: "Transcribí esta ficha odontológica al JSON indicado." },
+  ] as unknown as Anthropic.MessageParam["content"];
 
   const anthropic = new Anthropic({ apiKey });
   const model = process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest";
@@ -80,29 +97,7 @@ export async function POST(req: Request) {
       model,
       max_tokens: 2000,
       system: SYSTEM,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mediaType as
-                  | "image/jpeg"
-                  | "image/png"
-                  | "image/webp"
-                  | "image/gif",
-                data: base64,
-              },
-            },
-            {
-              type: "text",
-              text: "Transcribí esta ficha odontológica al JSON indicado.",
-            },
-          ],
-        },
-      ],
+      messages: [{ role: "user", content }],
     });
 
     const text = msg.content
@@ -114,7 +109,7 @@ export async function POST(req: Request) {
     const json = extractJson(text);
     if (!json) {
       return NextResponse.json(
-        { error: "La IA no devolvió un JSON válido. Probá con una foto más nítida." },
+        { error: "La IA no devolvió un JSON válido. Probá con un archivo más nítido." },
         { status: 502 }
       );
     }
@@ -127,7 +122,6 @@ export async function POST(req: Request) {
 
 function extractJson(text: string): unknown | null {
   let t = text.trim();
-  // Quita fences ```json ... ```
   t = t.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
   const start = t.indexOf("{");
   const end = t.lastIndexOf("}");
