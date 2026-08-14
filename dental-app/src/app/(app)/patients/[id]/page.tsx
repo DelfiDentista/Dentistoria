@@ -11,6 +11,8 @@ import type {
   AccountEntry,
   Procedure,
   Insurer,
+  Budget,
+  BudgetItem,
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +41,8 @@ export default async function PatientDetail({
     { data: account },
     { data: procs },
     { data: ins },
+    { data: budgetsData },
+    { data: budgetItemsData },
   ] = await Promise.all([
     supabase.from("medical_histories").select("data").eq("patient_id", id).maybeSingle(),
     supabase
@@ -54,7 +58,24 @@ export default async function PatientDetail({
       .order("entry_date", { ascending: false }),
     supabase.from("procedures").select("*").order("code", { ascending: true }),
     supabase.from("insurers").select("*").order("name", { ascending: true }),
+    supabase
+      .from("budgets")
+      .select("*")
+      .eq("patient_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("budget_items")
+      .select("*, budgets!inner(patient_id)")
+      .eq("budgets.patient_id", id),
   ]);
+
+  const accountEntries = (account as AccountEntry[]) ?? [];
+  const paidByBudget: Record<string, number> = {};
+  accountEntries.forEach((e) => {
+    if (e.kind === "pago" && e.budget_id) {
+      paidByBudget[e.budget_id] = (paidByBudget[e.budget_id] ?? 0) + Number(e.amount);
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -83,9 +104,12 @@ export default async function PatientDetail({
         medicalHistory={(mh?.data as MedicalHistoryData) ?? {}}
         notes={(notes as EvolutionNote[]) ?? []}
         odontogram={(odo?.teeth as Odontogram) ?? {}}
-        accountEntries={(account as AccountEntry[]) ?? []}
+        accountEntries={accountEntries}
         procedures={(procs as Procedure[]) ?? []}
         insurers={(ins as Insurer[]) ?? []}
+        budgets={(budgetsData as Budget[]) ?? []}
+        budgetItems={(budgetItemsData as unknown as BudgetItem[]) ?? []}
+        paidByBudget={paidByBudget}
       />
     </div>
   );

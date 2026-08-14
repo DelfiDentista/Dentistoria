@@ -2,11 +2,14 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth-actions";
 
-const nav = [
+const mainNav = [
   { href: "/patients", label: "Pacientes", icon: "👥" },
   { href: "/calendar", label: "Calendario", icon: "🗓️" },
   { href: "/appointments", label: "Turnos", icon: "📅" },
   { href: "/cash", label: "Caja", icon: "💵" },
+];
+
+const maintNav = [
   { href: "/import", label: "Importar", icon: "⬆️" },
   { href: "/catalogs", label: "Catálogos", icon: "📚" },
 ];
@@ -21,6 +24,16 @@ export default async function AppLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  const NavLink = ({ item }: { item: { href: string; label: string; icon: string } }) => (
+    <Link
+      href={item.href}
+      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+    >
+      <span aria-hidden>{item.icon}</span>
+      {item.label}
+    </Link>
+  );
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar (desktop) */}
@@ -30,15 +43,15 @@ export default async function AppLayout({
           <p className="text-xs text-slate-500">Consultorio odontológico</p>
         </div>
         <nav className="flex-1 space-y-1">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              <span aria-hidden>{item.icon}</span>
-              {item.label}
-            </Link>
+          {mainNav.map((item) => (
+            <NavLink key={item.href} item={item} />
+          ))}
+          <div className="my-3 border-t border-slate-200" />
+          <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Mantenimiento
+          </p>
+          {maintNav.map((item) => (
+            <NavLink key={item.href} item={item} />
           ))}
         </nav>
         <div className="border-t border-slate-200 pt-3">
@@ -62,11 +75,25 @@ export default async function AppLayout({
 
       {/* Bottom nav (mobile) */}
       <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-slate-200 bg-white md:hidden">
-        {nav.map((item) => (
+        {mainNav.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-600"
+          >
+            <span className="text-base" aria-hidden>
+              {item.icon}
+            </span>
+            {item.label}
+          </Link>
+        ))}
+        {maintNav.map((item, idx) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-500 ${
+              idx === 0 ? "border-l border-slate-200" : ""
+            }`}
           >
             <span className="text-base" aria-hidden>
               {item.icon}

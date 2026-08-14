@@ -85,6 +85,27 @@ export type AccountEntry = {
   amount: number;
   invoiced: boolean;
   notes: string | null;
+  budget_id?: string | null;
+};
+
+export type Budget = {
+  id: string;
+  number: number;
+  patient_id: string;
+  description: string;
+  budget_date: string;
+};
+
+export type BudgetItem = {
+  id: string;
+  budget_id: string;
+  procedure_id: string | null;
+  code: string | null;
+  name: string;
+  teeth: string | null;
+  quantity: number;
+  unit_price: number;
+  done_count: number;
 };
 
 // Resultado de la transcripción por IA

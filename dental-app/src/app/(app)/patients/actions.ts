@@ -152,6 +152,7 @@ export async function addAccountEntry(patientId: string, formData: FormData) {
     currency: String(formData.get("currency") || "ARS"),
     amount,
     invoiced: formData.get("invoiced") === "on",
+    budget_id: (String(formData.get("budget_id") || "") || null) as string | null,
     entry_date: toISO(String(formData.get("entry_date") || "")),
   });
   if (error) throw new Error(error.message);

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { addAccountEntry, deleteAccountEntry } from "@/app/(app)/patients/actions";
 import { money, formatDate } from "@/lib/format";
-import type { AccountEntry, Procedure } from "@/lib/types";
+import type { AccountEntry, Procedure, Budget } from "@/lib/types";
 
 function todayInput(): string {
   const d = new Date();
@@ -15,10 +15,12 @@ export default function AccountTab({
   patientId,
   entries,
   procedures,
+  budgets,
 }: {
   patientId: string;
   entries: AccountEntry[];
   procedures: Procedure[];
+  budgets: Budget[];
 }) {
   const [currency, setCurrency] = useState<"ARS" | "USD">("ARS");
   const [modal, setModal] = useState<null | "prestacion" | "pago">(null);
@@ -221,6 +223,20 @@ export default function AccountTab({
                 placeholder={modal === "pago" ? "Ej: A cuenta de tratamiento" : "Descripción"}
               />
             </div>
+
+            {modal === "pago" && budgets.length > 0 && (
+              <div>
+                <label className="label">Imputar a presupuesto (opcional)</label>
+                <select name="budget_id" className="input" defaultValue="">
+                  <option value="">— Sin imputar —</option>
+                  {budgets.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      N° {b.number} · {b.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div>

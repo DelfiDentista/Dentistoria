@@ -9,15 +9,19 @@ import type {
   AccountEntry,
   Procedure,
   Insurer,
+  Budget,
+  BudgetItem,
 } from "@/lib/types";
 import InfoTab from "./InfoTab";
 import AntecedentesTab from "./AntecedentesTab";
 import EvolutionTab from "./EvolutionTab";
 import OdontogramTab from "./OdontogramTab";
 import AccountTab from "./AccountTab";
+import BudgetsTab from "./BudgetsTab";
 
 const TABS = [
   { key: "info", label: "Información" },
+  { key: "presupuestos", label: "Presupuestos" },
   { key: "cuenta", label: "Cuenta" },
   { key: "antecedentes", label: "Antecedentes" },
   { key: "evolucion", label: "Evolución" },
@@ -34,6 +38,9 @@ export default function PatientTabs({
   accountEntries,
   procedures,
   insurers,
+  budgets,
+  budgetItems,
+  paidByBudget,
 }: {
   patient: Patient;
   medicalHistory: MedicalHistoryData;
@@ -42,6 +49,9 @@ export default function PatientTabs({
   accountEntries: AccountEntry[];
   procedures: Procedure[];
   insurers: Insurer[];
+  budgets: Budget[];
+  budgetItems: BudgetItem[];
+  paidByBudget: Record<string, number>;
 }) {
   const [tab, setTab] = useState<TabKey>("info");
 
@@ -64,11 +74,21 @@ export default function PatientTabs({
       </div>
 
       {tab === "info" && <InfoTab patient={patient} insurers={insurers} />}
+      {tab === "presupuestos" && (
+        <BudgetsTab
+          patientId={patient.id}
+          budgets={budgets}
+          items={budgetItems}
+          procedures={procedures}
+          paidByBudget={paidByBudget}
+        />
+      )}
       {tab === "cuenta" && (
         <AccountTab
           patientId={patient.id}
           entries={accountEntries}
           procedures={procedures}
+          budgets={budgets}
         />
       )}
       {tab === "antecedentes" && (
