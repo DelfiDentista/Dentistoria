@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createPatient } from "@/app/(app)/patients/actions";
+import { createClient } from "@/lib/supabase/client";
 import type { MedicalHistoryData } from "@/lib/types";
 
 type Fields = {
@@ -53,9 +54,20 @@ export default function PatientForm() {
     setError(null);
     setOk(false);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/transcribe", { method: "POST", body: fd });
+      // Subir a Storage primero (evita el límite de tamaño de Vercel)
+      const supabase = createClient();
+      const safeName = file.name.replace(/[^\w.\-]/g, "_");
+      const path = `uploads/${Date.now()}-${safeName}`;
+      const { error: upErr } = await supabase.storage
+        .from("fichas")
+        .upload(path, file, { contentType: file.type || undefined, upsert: false });
+      if (upErr) throw new Error("No se pudo subir el archivo: " + upErr.message);
+
+      const res = await fetch("/api/transcribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path, mime: file.type }),
+      });
       if (!res.ok) {
         const t = await res.json().catch(() => ({}));
         throw new Error(t.error || "No se pudo transcribir la imagen.");

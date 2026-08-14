@@ -162,11 +162,16 @@ insert into storage.buckets (id, name, public)
 values ('fichas', 'fichas', false)
 on conflict (id) do nothing;
 
-drop policy if exists "fichas authenticated read"  on storage.objects;
-drop policy if exists "fichas authenticated write" on storage.objects;
+drop policy if exists "fichas authenticated read"   on storage.objects;
+drop policy if exists "fichas authenticated write"  on storage.objects;
+drop policy if exists "fichas authenticated delete" on storage.objects;
 
 create policy "fichas authenticated read" on storage.objects
   for select to authenticated using (bucket_id = 'fichas');
 
 create policy "fichas authenticated write" on storage.objects
   for insert to authenticated with check (bucket_id = 'fichas');
+
+-- Permite borrar el scan una vez transcripto (para no ocupar espacio).
+create policy "fichas authenticated delete" on storage.objects
+  for delete to authenticated using (bucket_id = 'fichas');

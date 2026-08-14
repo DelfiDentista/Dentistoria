@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { bulkCreatePatients } from "@/app/(app)/import/actions";
+import { createClient } from "@/lib/supabase/client";
 
 type Row = {
   id: number;
@@ -62,13 +63,29 @@ export default function BulkImport({ existingDnis }: { existingDnis: string[] })
     setResult(null);
     setProgress({ done: 0, total: files.length });
 
+    const supabase = createClient();
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       let row: Row;
       try {
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch("/api/transcribe", { method: "POST", body: fd });
+        // 1) Subir el archivo a Supabase Storage (evita el límite de 4.5MB de Vercel)
+        const safeName = file.name.replace(/[^\w.\-]/g, "_");
+        const path = `imports/${Date.now()}-${i}-${safeName}`;
+        const { error: upErr } = await supabase.storage
+          .from("fichas")
+          .upload(path, file, {
+            contentType: file.type || undefined,
+            upsert: false,
+          });
+        if (upErr) throw new Error("No se pudo subir el archivo: " + upErr.message);
+
+        // 2) Transcribir leyendo el archivo desde Storage
+        const res = await fetch("/api/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path, mime: file.type }),
+        });
         if (!res.ok) {
           const t = await res.json().catch(() => ({}));
           throw new Error(t.error || "Error de transcripción");

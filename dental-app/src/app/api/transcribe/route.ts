@@ -45,7 +45,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Requiere sesión
   const supabase = await createClient();
   const {
     data: { user },
@@ -54,25 +53,42 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
-  const form = await req.formData();
-  const file = form.get("file");
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "No se recibió archivo." }, { status: 400 });
+  // El archivo se sube antes a Supabase Storage (bucket "fichas") y acá se recibe su ruta.
+  let path = "";
+  let mime = "";
+  try {
+    const body = await req.json();
+    path = String(body.path || "");
+    mime = String(body.mime || "");
+  } catch {
+    return NextResponse.json({ error: "Body inválido." }, { status: 400 });
+  }
+  if (!path) {
+    return NextResponse.json({ error: "Falta la ruta del archivo." }, { status: 400 });
   }
 
-  const isPdf =
-    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-  const allowedImg = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  const mediaType = allowedImg.includes(file.type) ? file.type : "image/jpeg";
-
-  const bytes = Buffer.from(await file.arrayBuffer());
-  if (bytes.byteLength > 20 * 1024 * 1024) {
+  const { data: blob, error: dlErr } = await supabase.storage
+    .from("fichas")
+    .download(path);
+  if (dlErr || !blob) {
     return NextResponse.json(
-      { error: "El archivo supera los 20 MB. Reducilo e intentá de nuevo." },
+      { error: "No se pudo leer el archivo subido." },
+      { status: 502 }
+    );
+  }
+
+  const bytes = Buffer.from(await blob.arrayBuffer());
+  if (bytes.byteLength > 28 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: "El archivo supera los 28 MB." },
       { status: 400 }
     );
   }
   const base64 = bytes.toString("base64");
+
+  const isPdf = mime === "application/pdf" || path.toLowerCase().endsWith(".pdf");
+  const allowedImg = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const mediaType = allowedImg.includes(mime) ? mime : "image/jpeg";
 
   const block = isPdf
     ? {
@@ -90,7 +106,7 @@ export async function POST(req: Request) {
   ] as unknown as Anthropic.MessageParam["content"];
 
   const anthropic = new Anthropic({ apiKey });
-  const model = process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest";
+  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 
   try {
     const msg = await anthropic.messages.create({
@@ -113,6 +129,8 @@ export async function POST(req: Request) {
         { status: 502 }
       );
     }
+    // El archivo ya se transcribió: se borra de Storage para no ocupar espacio.
+    await supabase.storage.from("fichas").remove([path]).catch(() => {});
     return NextResponse.json(json);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error al llamar a la IA.";
