@@ -138,3 +138,29 @@ export async function saveOdontogram(patientId: string, teeth: Odontogram) {
   if (error) throw new Error(error.message);
   revalidatePath(`/patients/${patientId}`);
 }
+
+export async function addAccountEntry(patientId: string, formData: FormData) {
+  const supabase = await createClient();
+  const amount = Number(formData.get("amount"));
+  if (!amount || isNaN(amount)) throw new Error("Importe inválido.");
+  const kind = String(formData.get("kind") || "prestacion");
+  const { error } = await supabase.from("account_entries").insert({
+    patient_id: patientId,
+    kind,
+    concept: str(formData.get("concept")),
+    procedure_id: (String(formData.get("procedure_id") || "") || null) as string | null,
+    currency: String(formData.get("currency") || "ARS"),
+    amount,
+    invoiced: formData.get("invoiced") === "on",
+    entry_date: toISO(String(formData.get("entry_date") || "")),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/patients/${patientId}`);
+}
+
+export async function deleteAccountEntry(id: string, patientId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("account_entries").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/patients/${patientId}`);
+}

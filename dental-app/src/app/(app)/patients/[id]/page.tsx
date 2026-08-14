@@ -8,6 +8,9 @@ import type {
   EvolutionNote,
   MedicalHistoryData,
   Odontogram,
+  AccountEntry,
+  Procedure,
+  Insurer,
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +32,14 @@ export default async function PatientDetail({
   if (!patient) notFound();
   const p = patient as Patient;
 
-  const [{ data: mh }, { data: notes }, { data: odo }] = await Promise.all([
+  const [
+    { data: mh },
+    { data: notes },
+    { data: odo },
+    { data: account },
+    { data: procs },
+    { data: ins },
+  ] = await Promise.all([
     supabase.from("medical_histories").select("data").eq("patient_id", id).maybeSingle(),
     supabase
       .from("evolution_notes")
@@ -37,6 +47,13 @@ export default async function PatientDetail({
       .eq("patient_id", id)
       .order("note_date", { ascending: false }),
     supabase.from("odontograms").select("teeth").eq("patient_id", id).maybeSingle(),
+    supabase
+      .from("account_entries")
+      .select("*")
+      .eq("patient_id", id)
+      .order("entry_date", { ascending: false }),
+    supabase.from("procedures").select("*").order("code", { ascending: true }),
+    supabase.from("insurers").select("*").order("name", { ascending: true }),
   ]);
 
   return (
@@ -66,6 +83,9 @@ export default async function PatientDetail({
         medicalHistory={(mh?.data as MedicalHistoryData) ?? {}}
         notes={(notes as EvolutionNote[]) ?? []}
         odontogram={(odo?.teeth as Odontogram) ?? {}}
+        accountEntries={(account as AccountEntry[]) ?? []}
+        procedures={(procs as Procedure[]) ?? []}
+        insurers={(ins as Insurer[]) ?? []}
       />
     </div>
   );

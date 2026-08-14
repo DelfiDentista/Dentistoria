@@ -60,6 +60,33 @@ export type ToothState = {
 };
 export type Odontogram = Record<string, ToothState>;
 
+export type Procedure = {
+  id: string;
+  code: string | null;
+  name: string;
+  price: number;
+  active: boolean;
+};
+
+export type Insurer = {
+  id: string;
+  name: string;
+  active: boolean;
+};
+
+export type AccountEntry = {
+  id: string;
+  patient_id: string;
+  entry_date: string;
+  kind: "prestacion" | "pago";
+  concept: string | null;
+  procedure_id: string | null;
+  currency: "ARS" | "USD";
+  amount: number;
+  invoiced: boolean;
+  notes: string | null;
+};
+
 // Resultado de la transcripción por IA
 export type TranscriptionResult = {
   patient: Partial<Patient>;

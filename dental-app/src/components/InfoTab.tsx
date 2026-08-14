@@ -2,9 +2,15 @@
 
 import { useState } from "react";
 import { updatePatient } from "@/app/(app)/patients/actions";
-import type { Patient } from "@/lib/types";
+import type { Patient, Insurer } from "@/lib/types";
 
-export default function InfoTab({ patient }: { patient: Patient }) {
+export default function InfoTab({
+  patient,
+  insurers,
+}: {
+  patient: Patient;
+  insurers: Insurer[];
+}) {
   const [saved, setSaved] = useState(false);
   const action = updatePatient.bind(null, patient.id);
 
@@ -48,7 +54,21 @@ export default function InfoTab({ patient }: { patient: Patient }) {
 
       <h3 className="pt-2 text-sm font-semibold text-slate-500">Obra social</h3>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Nombre" name="insurance_name" defaultValue={patient.insurance_name} />
+        <div>
+          <label className="label">Nombre</label>
+          <input
+            name="insurance_name"
+            list="insurers-list"
+            defaultValue={patient.insurance_name ?? ""}
+            className="input"
+            placeholder="Elegí del catálogo o escribí"
+          />
+          <datalist id="insurers-list">
+            {insurers.map((i) => (
+              <option key={i.id} value={i.name} />
+            ))}
+          </datalist>
+        </div>
         <Field label="Plan" name="insurance_plan" defaultValue={patient.insurance_plan} />
         <Field label="N.º afiliado" name="insurance_number" defaultValue={patient.insurance_number} />
       </div>

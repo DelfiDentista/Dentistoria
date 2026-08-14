@@ -8,6 +8,7 @@ const nav = [
   { href: "/appointments", label: "Turnos", icon: "📅" },
   { href: "/cash", label: "Caja", icon: "💵" },
   { href: "/import", label: "Importar", icon: "⬆️" },
+  { href: "/catalogs", label: "Catálogos", icon: "📚" },
 ];
 
 export default async function AppLayout({

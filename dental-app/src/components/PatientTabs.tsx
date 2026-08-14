@@ -6,14 +6,19 @@ import type {
   EvolutionNote,
   MedicalHistoryData,
   Odontogram,
+  AccountEntry,
+  Procedure,
+  Insurer,
 } from "@/lib/types";
 import InfoTab from "./InfoTab";
 import AntecedentesTab from "./AntecedentesTab";
 import EvolutionTab from "./EvolutionTab";
 import OdontogramTab from "./OdontogramTab";
+import AccountTab from "./AccountTab";
 
 const TABS = [
   { key: "info", label: "Información" },
+  { key: "cuenta", label: "Cuenta" },
   { key: "antecedentes", label: "Antecedentes" },
   { key: "evolucion", label: "Evolución" },
   { key: "odontograma", label: "Odontograma" },
@@ -26,11 +31,17 @@ export default function PatientTabs({
   medicalHistory,
   notes,
   odontogram,
+  accountEntries,
+  procedures,
+  insurers,
 }: {
   patient: Patient;
   medicalHistory: MedicalHistoryData;
   notes: EvolutionNote[];
   odontogram: Odontogram;
+  accountEntries: AccountEntry[];
+  procedures: Procedure[];
+  insurers: Insurer[];
 }) {
   const [tab, setTab] = useState<TabKey>("info");
 
@@ -52,7 +63,14 @@ export default function PatientTabs({
         ))}
       </div>
 
-      {tab === "info" && <InfoTab patient={patient} />}
+      {tab === "info" && <InfoTab patient={patient} insurers={insurers} />}
+      {tab === "cuenta" && (
+        <AccountTab
+          patientId={patient.id}
+          entries={accountEntries}
+          procedures={procedures}
+        />
+      )}
       {tab === "antecedentes" && (
         <AntecedentesTab patientId={patient.id} initial={medicalHistory} />
       )}

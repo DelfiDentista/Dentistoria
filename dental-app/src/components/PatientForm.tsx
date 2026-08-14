@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createPatient } from "@/app/(app)/patients/actions";
 import { createClient } from "@/lib/supabase/client";
-import type { MedicalHistoryData } from "@/lib/types";
+import type { MedicalHistoryData, Insurer } from "@/lib/types";
 
 type Fields = {
   first_name: string;
@@ -35,7 +35,7 @@ const EMPTY: Fields = {
   notes: "",
 };
 
-export default function PatientForm() {
+export default function PatientForm({ insurers = [] }: { insurers?: Insurer[] }) {
   const [f, setF] = useState<Fields>(EMPTY);
   const [mh, setMh] = useState<MedicalHistoryData | null>(null);
   const [evo, setEvo] = useState<{ note_date: string | null; body: string }[]>([]);
@@ -227,10 +227,17 @@ export default function PatientForm() {
             <label className="label">Nombre</label>
             <input
               name="insurance_name"
+              list="insurers-list-new"
               className="input"
               value={f.insurance_name}
               onChange={(e) => set("insurance_name", e.target.value)}
+              placeholder="Elegí del catálogo o escribí"
             />
+            <datalist id="insurers-list-new">
+              {insurers.map((i) => (
+                <option key={i.id} value={i.name} />
+              ))}
+            </datalist>
           </div>
           <div>
             <label className="label">Plan</label>
