@@ -11,7 +11,7 @@ import {
   setBudgetItemDone,
 } from "@/app/(app)/patients/budget-actions";
 import { money, formatDate, fullName } from "@/lib/format";
-import type { Budget, BudgetItem, Procedure, Patient } from "@/lib/types";
+import type { Budget, BudgetItem, Procedure, Patient, Currency } from "@/lib/types";
 
 const CLINIC_NAME = "Dra. Marina Delfina Clement";
 const CLINIC_LICENSE = "M.N. 40786 · M.P. 91794";
@@ -44,11 +44,14 @@ export default function BudgetsTab({
   function itemsOf(budgetId: string) {
     return items.filter((it) => it.budget_id === budgetId);
   }
-  function totalOf(budgetId: string) {
-    return itemsOf(budgetId).reduce(
-      (s, it) => s + it.quantity * Number(it.unit_price),
-      0
-    );
+  // Suma por moneda, ya que un mismo presupuesto puede tener ítems en ARS y en USD.
+  function totalsOf(budgetId: string): Record<string, number> {
+    const totals: Record<string, number> = {};
+    itemsOf(budgetId).forEach((it) => {
+      const cur = it.currency || "ARS";
+      totals[cur] = (totals[cur] ?? 0) + it.quantity * Number(it.unit_price);
+    });
+    return totals;
   }
   function statusOf(total: number, paid: number) {
     if (paid <= 0) return { label: "Pendiente", cls: "bg-slate-100 text-slate-600" };
@@ -60,7 +63,7 @@ export default function BudgetsTab({
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const marginX = 20;
-    const pageWidth = 210;
+    const rightEdge = 190;
     const pageBottom = 280;
     let y = 22;
 
@@ -71,7 +74,6 @@ export default function BudgetsTab({
       }
     }
 
-    // Encabezado: profesional
     doc.setFont("helvetica", "bold");
     doc.setFontSize(15);
     doc.text(CLINIC_NAME, marginX, y);
@@ -82,10 +84,9 @@ export default function BudgetsTab({
     y += 4;
 
     doc.setDrawColor(200);
-    doc.line(marginX, y, pageWidth - marginX, y);
+    doc.line(marginX, y, rightEdge, y);
     y += 8;
 
-    // Datos del paciente
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("Paciente", marginX, y);
@@ -97,7 +98,6 @@ export default function BudgetsTab({
     doc.text(`DNI: ${patient.dni ?? "—"}`, marginX, y);
     y += 10;
 
-    // Nombre del presupuesto
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
     doc.text(b.description, marginX, y);
@@ -109,65 +109,65 @@ export default function BudgetsTab({
     doc.setTextColor(0);
     y += 8;
 
-    // Tabla de prestaciones — encabezados
     const colProc = marginX;
-    const colNote = marginX + 65;
-    const colQty = marginX + 118;
-    const colUnit = marginX + 135;
-    const colSub = pageWidth - marginX - 25;
+    const colNote = 80;
+    const colQty = 122;
+    const colUnit = 158;
+    const colSub = rightEdge;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.text("Prestación", colProc, y);
     doc.text("Nota", colNote, y);
-    doc.text("Cant.", colQty, y);
-    doc.text("Precio unit.", colUnit, y);
-    doc.text("Subtotal", colSub, y);
+    doc.text("Cant.", colQty, y, { align: "right" });
+    doc.text("Precio unit.", colUnit, y, { align: "right" });
+    doc.text("Subtotal", colSub, y, { align: "right" });
     y += 2;
     doc.setDrawColor(180);
-    doc.line(marginX, y, pageWidth - marginX, y);
+    doc.line(marginX, y, rightEdge, y);
     y += 5;
 
     doc.setFont("helvetica", "normal");
     const list = itemsOf(b.id);
     list.forEach((it) => {
       ensureSpace(10);
+      const cur = it.currency || "ARS";
       const subtotal = it.quantity * Number(it.unit_price);
       const procLines = doc.splitTextToSize(
         `${it.code ? it.code + " · " : ""}${it.name}`,
-        60
+        54
       );
-      const noteLines = doc.splitTextToSize(it.teeth || "—", 48);
+      const noteLines = doc.splitTextToSize(it.teeth || "—", 36);
       const lineCount = Math.max(procLines.length, noteLines.length);
 
       doc.text(procLines, colProc, y);
       doc.text(noteLines, colNote, y);
-      doc.text(String(it.quantity), colQty, y);
-      doc.text(money(Number(it.unit_price)), colUnit, y);
-      doc.text(money(subtotal), colSub, y);
+      doc.text(String(it.quantity), colQty, y, { align: "right" });
+      doc.text(money(Number(it.unit_price), cur as Currency), colUnit, y, { align: "right" });
+      doc.text(money(subtotal, cur as Currency), colSub, y, { align: "right" });
 
       y += lineCount * 4.5 + 3;
     });
 
     ensureSpace(14);
     doc.setDrawColor(180);
-    doc.line(marginX, y, pageWidth - marginX, y);
+    doc.line(marginX, y, rightEdge, y);
     y += 7;
 
-    // Total
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    const total = totalOf(b.id);
-    doc.text(`Total: ${money(total)}`, pageWidth - marginX, y, { align: "right" });
-    y += 14;
+    const totals = totalsOf(b.id);
+    Object.entries(totals).forEach(([cur, amt]) => {
+      doc.text(`Total (${cur}): ${money(amt, cur as Currency)}`, rightEdge, y, { align: "right" });
+      y += 6;
+    });
+    y += 8;
 
-    // Fecha del documento
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
     doc.text(`Fecha: ${formatDate(new Date().toISOString())}`, marginX, y);
     y += 10;
 
-    // Leyenda de validez
     ensureSpace(10);
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
@@ -224,7 +224,10 @@ export default function BudgetsTab({
 
       <div className="space-y-3">
         {budgets.map((b) => {
-          const total = totalOf(b.id);
+          const totals = totalsOf(b.id);
+          const currencies = Object.keys(totals);
+          const singleCurrency = currencies.length <= 1;
+          const total = totals[currencies[0]] ?? 0;
           const paid = paidByBudget[b.id] ?? 0;
           const saldo = total - paid;
           const st = statusOf(total, paid);
@@ -279,17 +282,30 @@ export default function BudgetsTab({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-slate-400">N° {b.number}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${st.cls}`}>
-                      {st.label}
-                    </span>
+                    {singleCurrency && (
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${st.cls}`}>
+                        {st.label}
+                      </span>
+                    )}
                   </div>
                   <p className="text-lg font-bold">{b.description}</p>
                   <p className="text-xs text-slate-500">{formatDate(b.budget_date)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-slate-500">Valor total</p>
-                  <p className="font-bold text-emerald-700">{money(total)}</p>
-                  <p className="text-xs text-slate-500">Saldo: {money(saldo)}</p>
+                  {currencies.length === 0 && (
+                    <p className="font-bold text-emerald-700">{money(0)}</p>
+                  )}
+                  {currencies.map((cur) => (
+                    <p key={cur} className="font-bold text-emerald-700">
+                      {money(totals[cur], cur as Currency)}
+                    </p>
+                  ))}
+                  {singleCurrency && currencies.length === 1 && (
+                    <p className="text-xs text-slate-500">
+                      Saldo: {money(saldo, currencies[0] as Currency)}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -379,9 +395,9 @@ function BudgetItemRow({
             {item.done_count}/{item.quantity}
           </p>
           <p className="text-xs text-slate-500">
-            Unitario: {money(Number(item.unit_price))} · Total:{" "}
+            Unitario: {money(Number(item.unit_price), item.currency ?? "ARS")} · Total:{" "}
             <span className="font-medium text-emerald-700">
-              {money(item.quantity * Number(item.unit_price))}
+              {money(item.quantity * Number(item.unit_price), item.currency ?? "ARS")}
             </span>
           </p>
         </div>
@@ -431,13 +447,17 @@ function ItemForm({
   const [code, setCode] = useState(initial?.code ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [price, setPrice] = useState(initial ? String(initial.unit_price) : "");
+  const [currency, setCurrency] = useState<Currency>(initial?.currency ?? "ARS");
+  const [procedureId, setProcedureId] = useState(initial?.procedure_id ?? "");
 
   function pick(id: string) {
+    setProcedureId(id);
     const p = procedures.find((x) => x.id === id);
     if (p) {
       setCode(p.code ?? "");
       setName(p.name);
       setPrice(p.price ? String(p.price) : "");
+      setCurrency(p.currency ?? "ARS");
     }
   }
 
@@ -449,35 +469,78 @@ function ItemForm({
           setCode("");
           setName("");
           setPrice("");
+          setCurrency("ARS");
+          setProcedureId("");
         }
       }}
       className="grid gap-2 rounded-lg border border-dashed border-slate-200 p-3 sm:grid-cols-2"
     >
+      <input type="hidden" name="code" value={code} />
+      <input type="hidden" name="name" value={name} />
+      <input type="hidden" name="procedure_id" value={procedureId} />
+
       <div className="sm:col-span-2">
         <label className="label">Prestación (del catálogo)</label>
-        <select onChange={(e) => pick(e.target.value)} defaultValue="" className="input">
+        <select onChange={(e) => pick(e.target.value)} defaultValue={procedureId} className="input">
           <option value="">— Elegir del catálogo —</option>
           {procedures.map((p) => (
             <option key={p.id} value={p.id}>
               {p.code ? p.code + " · " : ""}
               {p.name}
-              {p.price ? ` (${money(Number(p.price))})` : ""}
+              {p.price ? ` (${money(Number(p.price), p.currency ?? "ARS")})` : ""}
             </option>
           ))}
         </select>
+        {!name && (
+          <p className="mt-1 text-xs text-slate-400">
+            Elegí una prestación del catálogo para continuar.
+          </p>
+        )}
       </div>
-      <input name="code" value={code} onChange={(e) => setCode(e.target.value)} className="input" placeholder="Código" />
-      <input name="name" value={name} onChange={(e) => setName(e.target.value)} required className="input" placeholder="Descripción" />
-      <input name="teeth" defaultValue={initial?.teeth ?? ""} className="input" placeholder="Nota (ej: corona diente 14)" />
-      <input name="quantity" type="number" min={1} defaultValue={initial?.quantity ?? 1} className="input" placeholder="Cantidad" />
-      <input name="unit_price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="input" placeholder="Precio unitario" />
+
+      <input
+        name="teeth"
+        defaultValue={initial?.teeth ?? ""}
+        className="input sm:col-span-2"
+        placeholder="Nota (ej: corona diente 14)"
+      />
+
+      <input
+        name="quantity"
+        type="number"
+        min={1}
+        defaultValue={initial?.quantity ?? 1}
+        className="input"
+        placeholder="Cantidad"
+      />
+      <div className="flex gap-2">
+        <input
+          name="unit_price"
+          type="number"
+          step="0.01"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          className="input"
+          placeholder="Precio unitario"
+        />
+        <select
+          name="currency"
+          value={currency}
+          onChange={(e) => setCurrency(e.target.value as Currency)}
+          className="input w-24"
+        >
+          <option value="ARS">ARS</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+
       <div className="flex gap-2 sm:col-span-2">
         {onCancel && (
           <button type="button" onClick={onCancel} className="btn-ghost">
             Cancelar
           </button>
         )}
-        <button className="btn-primary flex-1">
+        <button className="btn-primary flex-1" disabled={!name}>
           {initial ? "Guardar cambios" : "Agregar prestación"}
         </button>
       </div>
