@@ -76,6 +76,7 @@ export default function PatientTabs({
       {tab === "info" && <InfoTab patient={patient} insurers={insurers} />}
       {tab === "presupuestos" && (
         <BudgetsTab
+          patient={patient}
           patientId={patient.id}
           budgets={budgets}
           items={budgetItems}
