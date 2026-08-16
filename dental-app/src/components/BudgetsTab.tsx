@@ -13,7 +13,7 @@ import {
 import { money, formatDate, fullName } from "@/lib/format";
 import type { Budget, BudgetItem, Procedure, Patient, Currency } from "@/lib/types";
 
-const CLINIC_NAME = "Dra. Marina Delfina Clement";
+const CLINIC_NAME = "Dra. Maria Delfina Clement";
 const CLINIC_LICENSE = "M.N. 40786 · M.P. 91794";
 
 function todayInput() {
@@ -44,7 +44,6 @@ export default function BudgetsTab({
   function itemsOf(budgetId: string) {
     return items.filter((it) => it.budget_id === budgetId);
   }
-  // Suma por moneda, ya que un mismo presupuesto puede tener ítems en ARS y en USD.
   function totalsOf(budgetId: string): Record<string, number> {
     const totals: Record<string, number> = {};
     itemsOf(budgetId).forEach((it) => {
@@ -322,12 +321,14 @@ export default function BudgetsTab({
                 </button>
                 <button
                   onClick={() => setEditingBudgetId(b.id)}
-                  className="text-xs font-medium text-slate-500 hover:text-brand"
+                  className="btn-ghost text-sm"
                 >
                   Editar
                 </button>
                 <form action={deleteBudget.bind(null, b.id, patientId)}>
-                  <button className="text-xs text-slate-400 hover:text-red-600">Eliminar</button>
+                  <button className="btn-ghost text-sm text-red-600 hover:bg-red-50">
+                    Eliminar
+                  </button>
                 </form>
               </div>
 
@@ -411,7 +412,7 @@ function BudgetItemRow({
             )}
           >
             <button
-              className="rounded border border-slate-200 px-2 py-0.5 text-xs hover:bg-white"
+              className="btn-ghost px-2 py-1 text-xs"
               title="Marcar una como realizada"
             >
               ✓
@@ -419,12 +420,14 @@ function BudgetItemRow({
           </form>
           <button
             onClick={() => setEditing(true)}
-            className="text-xs font-medium text-slate-500 hover:text-brand"
+            className="btn-ghost px-2 py-1 text-xs"
           >
             Editar
           </button>
           <form action={deleteBudgetItem.bind(null, item.id, patientId)}>
-            <button className="text-xs text-slate-400 hover:text-red-600">✕</button>
+            <button className="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50">
+              Eliminar
+            </button>
           </form>
         </div>
       </div>
