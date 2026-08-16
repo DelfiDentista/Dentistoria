@@ -1,4 +1,5 @@
 export type Sex = "femenino" | "masculino" | "otro";
+export type Currency = "ARS" | "USD";
 
 export type Patient = {
   id: string;
@@ -65,6 +66,7 @@ export type Procedure = {
   code: string | null;
   name: string;
   price: number;
+  currency: Currency;
   active: boolean;
 };
 
@@ -81,7 +83,7 @@ export type AccountEntry = {
   kind: "prestacion" | "pago";
   concept: string | null;
   procedure_id: string | null;
-  currency: "ARS" | "USD";
+  currency: Currency;
   amount: number;
   invoiced: boolean;
   notes: string | null;
@@ -105,6 +107,7 @@ export type BudgetItem = {
   teeth: string | null;
   quantity: number;
   unit_price: number;
+  currency: Currency;
   done_count: number;
 };
 
