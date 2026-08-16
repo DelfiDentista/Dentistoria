@@ -18,6 +18,7 @@ import EvolutionTab from "./EvolutionTab";
 import OdontogramTab from "./OdontogramTab";
 import AccountTab from "./AccountTab";
 import BudgetsTab from "./BudgetsTab";
+import FilesTab, { type AttachmentWithUrl } from "./FilesTab";
 
 const TABS = [
   { key: "info", label: "Información" },
@@ -26,6 +27,7 @@ const TABS = [
   { key: "antecedentes", label: "Antecedentes" },
   { key: "evolucion", label: "Evolución" },
   { key: "odontograma", label: "Odontograma" },
+  { key: "archivos", label: "Archivos" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -41,6 +43,7 @@ export default function PatientTabs({
   budgets,
   budgetItems,
   paidByBudget,
+  attachments,
 }: {
   patient: Patient;
   medicalHistory: MedicalHistoryData;
@@ -52,6 +55,7 @@ export default function PatientTabs({
   budgets: Budget[];
   budgetItems: BudgetItem[];
   paidByBudget: Record<string, number>;
+  attachments: AttachmentWithUrl[];
 }) {
   const [tab, setTab] = useState<TabKey>("info");
 
@@ -100,6 +104,9 @@ export default function PatientTabs({
       )}
       {tab === "odontograma" && (
         <OdontogramTab patientId={patient.id} initial={odontogram} />
+      )}
+      {tab === "archivos" && (
+        <FilesTab patientId={patient.id} attachments={attachments} />
       )}
     </div>
   );
