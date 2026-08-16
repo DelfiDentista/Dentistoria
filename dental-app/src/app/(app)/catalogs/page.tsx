@@ -32,15 +32,19 @@ export default async function CatalogsPage() {
       <section className="space-y-4">
         <h2 className="font-semibold">Prestaciones</h2>
 
-        <form action={createProcedure} className="card grid gap-3 sm:grid-cols-[1fr_2fr_1fr_auto]">
+        <form action={createProcedure} className="card grid gap-3 sm:grid-cols-[1fr_2fr_1fr_1fr_auto]">
           <input name="code" className="input" placeholder="Código (ej. 04.01.08)" />
           <input name="name" required className="input" placeholder="Descripción (ej. Poste de fibra)" />
           <input name="price" type="number" step="0.01" className="input" placeholder="Precio" />
+          <select name="currency" defaultValue="ARS" className="input">
+            <option value="ARS">ARS</option>
+            <option value="USD">USD</option>
+          </select>
           <button className="btn-primary">Agregar</button>
         </form>
 
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-          <table className="w-full min-w-[520px] text-sm">
+          <table className="w-full min-w-[560px] text-sm">
             <thead className="bg-slate-50 text-left text-xs text-slate-500">
               <tr>
                 <th className="px-4 py-2 font-medium">Código</th>
@@ -61,7 +65,9 @@ export default async function CatalogsPage() {
                 <tr key={p.id} className="hover:bg-slate-50">
                   <td className="px-4 py-2 text-slate-500">{p.code ?? "—"}</td>
                   <td className="px-4 py-2 font-medium">{p.name}</td>
-                  <td className="px-4 py-2 text-right">{money(Number(p.price))}</td>
+                  <td className="px-4 py-2 text-right">
+                    {money(Number(p.price), p.currency ?? "ARS")}
+                  </td>
                   <td className="px-4 py-2 text-right">
                     <form action={deleteProcedure.bind(null, p.id)}>
                       <button className="text-xs text-slate-400 hover:text-red-600">
