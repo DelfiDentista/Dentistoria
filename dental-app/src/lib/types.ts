@@ -111,6 +111,15 @@ export type BudgetItem = {
   done_count: number;
 };
 
+// Archivo adjunto a la ficha del paciente (radiografías, estudios, fotos, etc.)
+export type Attachment = {
+  id: string;
+  patient_id: string;
+  storage_path: string;
+  kind: string | null;
+  created_at: string;
+};
+
 // Resultado de la transcripción por IA
 export type TranscriptionResult = {
   patient: Partial<Patient>;
