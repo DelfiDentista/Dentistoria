@@ -12,10 +12,12 @@ export async function createProcedure(formData: FormData) {
   const supabase = await createClient();
   const name = s(formData.get("name"));
   if (!name) throw new Error("La prestación necesita una descripción.");
+  const currency = String(formData.get("currency") || "ARS") === "USD" ? "USD" : "ARS";
   const { error } = await supabase.from("procedures").insert({
     code: s(formData.get("code")),
     name,
     price: Number(formData.get("price")) || 0,
+    currency,
   });
   if (error) throw new Error(error.message);
   revalidatePath("/catalogs");
