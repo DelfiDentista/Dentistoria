@@ -1,4 +1,5 @@
 import { AR_TZ } from "./dates";
+import type { Currency } from "./types";
 
 export function fullName(p: { first_name: string; last_name: string }) {
   return `${p.last_name}, ${p.first_name}`;
@@ -42,9 +43,9 @@ export function formatDateTime(iso: string | null): string {
   });
 }
 
-export function money(n: number): string {
+export function money(n: number, currency: Currency = "ARS"): string {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
-    currency: "ARS",
+    currency,
   }).format(n);
 }
