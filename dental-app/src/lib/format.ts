@@ -1,8 +1,25 @@
 import { AR_TZ } from "./dates";
 import type { Currency } from "./types";
 
+// Pone en may/minúscula prolija cada palabra ("SOFIA MARCHESE" o
+// "sofia marchese" -> "Sofia Marchese"), sin importar cómo esté
+// guardado el dato original.
+function titleCase(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    .toLowerCase()
+    .split(" ")
+    .map((word) =>
+      word
+        .split("-")
+        .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : part))
+        .join("-")
+    )
+    .join(" ");
+}
+
 export function fullName(p: { first_name: string; last_name: string }) {
-  return `${p.last_name}, ${p.first_name}`;
+  return `${titleCase(p.last_name)}, ${titleCase(p.first_name)}`;
 }
 
 export function age(birthDate: string | null): number | null {
