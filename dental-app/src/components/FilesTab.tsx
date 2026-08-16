@@ -13,8 +13,6 @@ export type AttachmentWithUrl = {
   url: string | null;
 };
 
-// Muestra un nombre legible a partir de la ruta guardada
-// (ej: "patients/abc/1734000000-radiografia.jpg" -> "radiografia.jpg")
 function displayName(path: string) {
   const last = path.split("/").pop() ?? path;
   return last.replace(/^\d+-/, "");
@@ -55,6 +53,10 @@ export default function FilesTab({
     }
   }
 
+  function openFile(url: string) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -93,14 +95,13 @@ export default function FilesTab({
             </div>
             <div className="flex items-center gap-3">
               {a.url ? (
-                
-                  href={a.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => openFile(a.url as string)}
                   className="text-xs font-medium text-brand hover:underline"
                 >
                   Descargar
-                </a>
+                </button>
               ) : (
                 <span className="text-xs text-slate-400">Link no disponible</span>
               )}
