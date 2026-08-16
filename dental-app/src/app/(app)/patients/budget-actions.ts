@@ -8,6 +8,10 @@ function s(v: FormDataEntryValue | null): string | null {
   return x === "" ? null : x;
 }
 
+function currencyOf(formData: FormData): "ARS" | "USD" {
+  return String(formData.get("currency") || "ARS") === "USD" ? "USD" : "ARS";
+}
+
 export async function createBudget(patientId: string, formData: FormData) {
   const supabase = await createClient();
   const description = s(formData.get("description"));
@@ -63,6 +67,7 @@ export async function addBudgetItem(
     teeth: s(formData.get("teeth")),
     quantity: Math.max(1, Number(formData.get("quantity")) || 1),
     unit_price: Number(formData.get("unit_price")) || 0,
+    currency: currencyOf(formData),
   });
   if (error) throw new Error(error.message);
   revalidatePath(`/patients/${patientId}`);
@@ -85,6 +90,7 @@ export async function updateBudgetItem(
       teeth: s(formData.get("teeth")),
       quantity: Math.max(1, Number(formData.get("quantity")) || 1),
       unit_price: Number(formData.get("unit_price")) || 0,
+      currency: currencyOf(formData),
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
