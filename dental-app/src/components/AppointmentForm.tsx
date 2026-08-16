@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { createAppointment } from "@/app/(app)/appointments/actions";
+import PatientPicker, { type PatientOpt } from "@/components/PatientPicker";
 
-type Opt = { id: string; label: string };
-
-export default function AppointmentForm({ patients }: { patients: Opt[] }) {
+export default function AppointmentForm({ patients }: { patients: PatientOpt[] }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -21,21 +20,20 @@ export default function AppointmentForm({ patients }: { patients: Opt[] }) {
           }}
           className="card mt-4 space-y-3"
         >
-          <div className="grid gap-3 sm:grid-cols-2">
+          <PatientPicker patients={patients} />
+
+          <div className="grid gap-3 sm:grid-cols-3">
             <div>
-              <label className="label">Paciente</label>
-              <select name="patient_id" className="input">
-                <option value="">— Sin asignar —</option>
-                {patients.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+              <label className="label">Fecha</label>
+              <input type="date" name="appt_date" required className="input" />
             </div>
             <div>
-              <label className="label">Fecha y hora</label>
-              <input type="datetime-local" name="starts_at" required className="input" />
+              <label className="label">Hora inicio</label>
+              <input type="time" name="start_time" required className="input" />
+            </div>
+            <div>
+              <label className="label">Hora fin</label>
+              <input type="time" name="end_time" className="input" />
             </div>
           </div>
           <div>
