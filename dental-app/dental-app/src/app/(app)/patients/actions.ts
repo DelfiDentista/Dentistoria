@@ -123,6 +123,21 @@ export async function addEvolutionNote(
   revalidatePath(`/patients/${patientId}`);
 }
 
+export async function updateEvolutionNote(
+  id: string,
+  patientId: string,
+  noteLocal: string,
+  body: string
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("evolution_notes")
+    .update({ note_date: toISO(noteLocal), body })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/patients/${patientId}`);
+}
+
 export async function deleteEvolutionNote(id: string, patientId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("evolution_notes").delete().eq("id", id);
