@@ -13,6 +13,7 @@ import type {
   Insurer,
   Budget,
   BudgetItem,
+  Attachment,
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,7 @@ export default async function PatientDetail({
     { data: ins },
     { data: budgetsData },
     { data: budgetItemsData },
+    { data: files },
   ] = await Promise.all([
     supabase.from("medical_histories").select("data").eq("patient_id", id).maybeSingle(),
     supabase
@@ -67,6 +69,11 @@ export default async function PatientDetail({
       .from("budget_items")
       .select("*, budgets!inner(patient_id)")
       .eq("budgets.patient_id", id),
+    supabase
+      .from("attachments")
+      .select("*")
+      .eq("patient_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const accountEntries = (account as AccountEntry[]) ?? [];
@@ -76,6 +83,18 @@ export default async function PatientDetail({
       paidByBudget[e.budget_id] = (paidByBudget[e.budget_id] ?? 0) + Number(e.amount);
     }
   });
+
+  // El bucket "fichas" es privado: generamos un link temporal (1 hora)
+  // para cada archivo, así se puede descargar sin exponerlo públicamente.
+  const attachmentRows = (files as Attachment[]) ?? [];
+  const attachments = await Promise.all(
+    attachmentRows.map(async (a) => {
+      const { data: signed } = await supabase.storage
+        .from("fichas")
+        .createSignedUrl(a.storage_path, 3600);
+      return { ...a, url: signed?.signedUrl ?? null };
+    })
+  );
 
   return (
     <div className="space-y-6">
@@ -110,6 +129,7 @@ export default async function PatientDetail({
         budgets={(budgetsData as Budget[]) ?? []}
         budgetItems={(budgetItemsData as unknown as BudgetItem[]) ?? []}
         paidByBudget={paidByBudget}
+        attachments={attachments}
       />
     </div>
   );
