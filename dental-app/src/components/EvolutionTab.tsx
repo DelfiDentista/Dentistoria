@@ -16,8 +16,6 @@ function nowLocalInput(): string {
   return local.toISOString().slice(0, 16);
 }
 
-// Convierte una fecha guardada (ISO) al formato que espera
-// <input type="datetime-local">, en horario local del navegador.
 function isoToLocalInput(iso: string): string {
   const d = new Date(iso);
   const off = d.getTimezoneOffset();
@@ -110,18 +108,15 @@ export default function EvolutionTab({
                 <span className="text-sm font-semibold text-brand">
                   {formatDateTime(n.note_date)}
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => setEditingId(n.id)}
-                    className="text-xs font-medium text-slate-500 hover:text-brand"
+                    className="btn-ghost px-2 py-1 text-xs"
                   >
                     Editar
                   </button>
                   <form action={deleteEvolutionNote.bind(null, n.id, patientId)}>
-                    <button
-                      className="text-xs text-slate-400 hover:text-red-600"
-                      title="Eliminar"
-                    >
+                    <button className="btn-ghost px-2 py-1 text-xs text-red-600 hover:bg-red-50">
                       Eliminar
                     </button>
                   </form>
@@ -136,7 +131,6 @@ export default function EvolutionTab({
   );
 }
 
-// Formulario en línea para corregir una nota de evolución ya guardada.
 function EditingNote({
   note,
   patientId,
